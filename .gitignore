@@ -147,6 +147,7 @@ dist
 **/*.back.*
 
 client/node_modules
+backend/node_modules
 
 *.sublime*
 
