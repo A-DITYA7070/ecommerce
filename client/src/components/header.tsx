@@ -8,7 +8,10 @@ const user = {
     role:"admin"
 }
 
-
+/**
+ * /header component -- includes navbar --> it renders the Header of the website..
+ * It is common for all other components..
+ */
 const Header = () => {
 
   const logoutHandler = () => {

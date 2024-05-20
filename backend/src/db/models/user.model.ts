@@ -1,20 +1,6 @@
 import mongoose from "mongoose";
 import validator from "validator";
-
-
-interface IUser extends Document{
-    _id:string;
-    name:string;
-    photo:string;
-    email:string;
-    role:"admin"| "user";
-    gender:"male"|"female";
-    dob: Date;
-    createdAt:Date;
-    updateAt:Date;
-    // virtual attribute
-    age:number;
-}
+import { IUser } from "../Interfaces/user.interface.js";
 
 
 const schema = new mongoose.Schema({
@@ -55,7 +41,12 @@ const schema = new mongoose.Schema({
 
 schema.virtual("age").get(function(){
     const today = new Date();
-    const dob = this.dob;
+    const dob:Date = this.dob;
+
+    if (!dob || !(dob instanceof Date)) {
+        return null;
+    }
+
     let age = today.getFullYear() - dob.getFullYear();
 
     if(

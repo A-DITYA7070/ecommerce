@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export const connectDB = () => {
+export const connectToMongoDB = () => {
     const dbUri = process.env.DB_URI;
 
     if (!dbUri) {
