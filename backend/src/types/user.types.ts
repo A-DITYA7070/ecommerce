@@ -1,5 +1,7 @@
 
-
+/**
+ * Interface for user registration.
+ */
 export interface NewUserRequestBody{
     name:string;
     email:string;

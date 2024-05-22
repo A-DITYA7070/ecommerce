@@ -1,6 +1,6 @@
 import express from "express";
-import { deleteUser, getAllUsers, getUser, newUser, updateUser } from "../controllers/user.controller.js";
-import { adminOnly } from "../middlewares/auth.middleware.js";
+import { deleteUser, getAllUsers, getUser, newUser, updateUser } from "../../controllers/user.controller.js";
+import { adminOnly } from "../../middlewares/auth.middleware.js";
 
 
 const app = express.Router();

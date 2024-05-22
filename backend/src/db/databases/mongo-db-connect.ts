@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 
+/**
+ * Function to connect to mongo-db database.
+ * @returns nill
+ */
 export const connectToMongoDB = () => {
+    
     const dbUri = process.env.DB_URI;
 
     if (!dbUri) {
@@ -11,7 +16,7 @@ export const connectToMongoDB = () => {
     mongoose.connect(dbUri, {
         dbName: "Ecommerce24",
     }).then((c) => {
-        console.log(`DB connected to ${c.connection.host}`);
+        console.log(`DB -- MONGODB--  connected to ${c.connection.host}`);
     }).catch((err) => {
         console.log(`Error connecting to DB: ${err}`);
     });

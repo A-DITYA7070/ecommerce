@@ -134,8 +134,8 @@ const updateUser = catchAsyncError(async(
     const {
         name,
         email,
-        photo
-        ,dob,
+        photo,
+        dob,
         gender
     } = req.body;
 
