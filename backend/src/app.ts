@@ -4,11 +4,15 @@ import Routes from "./routes/index.js"
 import { errorMiddleWare } from "./middlewares/error.js";
 import { connectToMongoDB } from "./db/databases/mongo-db-connect.js";
 import NodeCache from "node-cache";
+import morgan from "morgan";
 
 const app = express();
+
+// implementing dotenv 
 dotenv.config({path:".env"});
 
 app.use(express.json());
+app.use(morgan("dev"));
 
 // connecting to database..
 connectToMongoDB();

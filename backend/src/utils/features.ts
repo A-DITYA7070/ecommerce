@@ -1,5 +1,7 @@
+import { nextTick } from "process";
 import { myCache } from "../app.js";
 import { Product } from "../db/models/product.model.js";
+import { OrderItemType } from "../types/order.types.js";
 import { invalidateCacheProps } from "../types/other.types.js";
 
 
@@ -26,6 +28,17 @@ export const invalidateCache = async ({
         myCache.del(productKeys);
 
     }
+}
 
 
+export const reduceStock = async (orderItems:OrderItemType[]) => {
+    for(let i=0;i<orderItems.length;i++){
+        const order = orderItems[i];
+        const product = await Product.findById(order.productId);
+        if(!product){
+            throw new Error("Product not found");
+        }
+        product.stock -= order.quantity;
+        await product.save();
+    }
 }
