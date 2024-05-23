@@ -5,6 +5,7 @@ import { Order } from "../db/models/order.model.js";
 import { invalidateCache, reduceStock } from "../utils/features.js";
 import ErrorHandler from "../utils/utility-class.js";
 import { myCache } from "../app.js";
+import { Product } from "../db/models/product.model.js";
 
 
 
@@ -32,7 +33,7 @@ const newOrder = catchAsyncError(async(
         return next(new ErrorHandler("Bad request",400));
     }
 
-    await Order.create({
+    const order = await Order.create({
         shippingInfo,
         orderItems,
         user,
@@ -45,7 +46,13 @@ const newOrder = catchAsyncError(async(
 
     await reduceStock(orderItems);
 
-    await invalidateCache({product:true,order:true,admin:true});
+    await invalidateCache({
+        product:true,
+        order:true,
+        admin:true,
+        userId:user,
+        productId:String(order.orderItems.map(i=>i.productId))
+    });
 
 
     res.status(201)
@@ -147,12 +154,91 @@ const getSingleOrderDetails = catchAsyncError(async(
     });
 });
 
+/**
+ * Controller function to process order
+ */
+const processOrder = catchAsyncError(async(
+    req:Request,
+    res:Response,
+    next:NextFunction
+) => {
+    const {id} = req.params;
 
+    if(!id){
+        return next(new ErrorHandler("Bad request",400));
+    }
+
+    const order = await Order.findById(id);
+    if(!order){
+        return next(new ErrorHandler("Order not found ",404));
+    }
+
+    switch(order.status){
+        case "PROCESSING":
+            order.status = "SHIPPED";
+            break;
+        case "SHIPPED":
+            order.status = "DELIVERED";
+            break;
+        default:
+            order.status = "DELIVERED";
+            break;
+    }
+
+    await order.save();
+
+    await invalidateCache({
+        product:false,
+        order:true,
+        admin:true,
+        userId:order.user,
+        orderId:String(order._id),
+    });
+
+    res.status(200)
+    .json({
+        success:true,
+        message:"Order processed successfully"
+    });
+});
+
+
+/**
+ * Controller function to delete order
+ */
+const deleteOrder = catchAsyncError(async(
+    req:Request,
+    res:Response,
+    next:NextFunction
+) => {
+    const {id} = req.params;
+    const order = await Order.findById(id);
+    if(!order){
+        return next(new ErrorHandler("Not found",404));
+    }
+    await order.deleteOne();
+
+    await invalidateCache({
+        product:false,
+        order:true,
+        admin:true,
+        userId:order.user,
+        orderId:String(order._id),
+    });
+
+    res.status(200)
+    .json({
+        success:true,
+        message:"Order deleted successfully"
+    });
+});
 
 
 export {
    newOrder,
    myOrderDetails,
    allOrders,
-   getSingleOrderDetails
+   getSingleOrderDetails,
+   processOrder,
+   deleteOrder
 }

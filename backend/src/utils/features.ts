@@ -1,4 +1,3 @@
-import { nextTick } from "process";
 import { myCache } from "../app.js";
 import { Product } from "../db/models/product.model.js";
 import { OrderItemType } from "../types/order.types.js";
@@ -8,7 +7,12 @@ import { invalidateCacheProps } from "../types/other.types.js";
 export const invalidateCache = async ({
     product,
     order,
-    admin
+    admin,
+    userId,
+    orderId,
+    productId,
+    coupon,
+    couponId
 } : invalidateCacheProps) => {
     if(product){
         const productKeys : string[] = [
@@ -16,17 +20,42 @@ export const invalidateCache = async ({
             "categories",
             "products",
             "all-products",
-
+            `product-${productId}`
         ];
 
-        const products = await Product.find({}).select("_id");
+        if(typeof productId === "string"){
+            productKeys.push(`product-${productId}`);
+        }
 
-        products.forEach(element => {
-            productKeys.push(`product-${element._id}`);
-        });
+        if(typeof productId === "object"){
+            productId.forEach((ele) => {
+                productKeys.push(`product-${ele}`);
+            })
+        }
 
         myCache.del(productKeys);
 
+    }
+
+    if(order){
+        const orderKeys : string[] = [
+            "all-orders",
+            `my-orders-${userId}`,
+            `order-${orderId}`,
+        ];
+
+        myCache.del(orderKeys);
+
+    }
+
+    if(coupon){
+        const couponKeys : string[] = [
+            "discount",
+            "all-coupons",
+            `coupon-${couponId}`,
+        ];
+
+        myCache.del(couponKeys);
     }
 }
 
