@@ -5,7 +5,9 @@ import { Coupon } from "../db/models/coupon.model.js";
 import { myCache, stripe } from "../app.js";
 import { invalidateCache } from "../utils/features.js";
 
-
+/**
+ * Controller function to create payment
+ */
 const createPaymentIntent = catchAsyncError(async(
     req:Request,
     res:Response,
