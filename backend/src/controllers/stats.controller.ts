@@ -4,8 +4,7 @@ import { myCache } from "../app.js";
 import { Product } from "../db/models/product.model.js";
 import { User } from "../db/models/user.model.js";
 import { Order } from "../db/models/order.model.js";
-import { calcuatePercentage } from "../utils/features.js";
-import { sanitizeFilter } from "mongoose";
+import { calcuatePercentage, getCategories, getChartData, MyDocument } from "../utils/features.js";
 
 
 /**
@@ -187,23 +186,16 @@ const getDashboardStats = catchAsyncError(async(
 
         lastSixMonthOrders.forEach((order)=>{
             const creationDate = order.createdAt;
-            const monthDiff = today.getMonth() - creationDate.getMonth();
+            const monthDiff = ((today.getMonth() - creationDate.getMonth()) + 12) % 12;
             if(monthDiff < 6){
                 orderMonthCounts[6 - monthDiff - 1] += 1;
                 orderMonthlyRevenue[6 - monthDiff - 1] += Number(order.total);
             }
         });
 
-        const categoriesCountPromise = categories.map(category => Product.countDocuments({category}));
-        
-        const categoriesCount = await Promise.all(categoriesCountPromise);
-        
-        const categryCount:Record<string,number> [] = [];
-
-        categories.forEach((category,i) => {
-            categryCount.push({
-                [category]:Math.round((categoriesCount[i]/productsCount) * 100)
-            });
+        const categryCount:Record<string,number> [] = await getCategories({
+            categories,
+            productsCount
         });
 
         const userRatio = {
@@ -243,7 +235,7 @@ const getDashboardStats = catchAsyncError(async(
 });
 
 /**
- * Controller function to get pie chart
+ * Controller function to get barchart in admin dashboard.
  */
 const getPiechart = catchAsyncError(async(
     req:Request,
@@ -251,18 +243,201 @@ const getPiechart = catchAsyncError(async(
     next:NextFunction
 ) => {
 
+    let charts;
+   
+    if(myCache.has("admin-pie-charts")){
+        charts = JSON.parse(myCache.get("admin-pie-charts") as string);
+    }else{
+        const [
+            processingOrder,
+            shippedOrder,
+            deliveredOrder,
+            categories,
+            productsCount,
+            productsOutOFStock,
+            allOrders,
+            allUsers,
+            adminUsers,
+            customerUsers
+        ] = await Promise.all([
+            Order.countDocuments({status:"PROCESSING"}),
+            Order.countDocuments({status:"SHIPPED"}),
+            Order.countDocuments({status:"DELIVERED"}),
+            Product.distinct("category"),
+            Product.countDocuments(),
+            Product.countDocuments({stock:0}),
+            Order.find({}).select(["total","discount","subtotal","tax","shippingCharges"]),
+            User.find({}).select(["dob"]),
+            User.countDocuments({role:"admin"}),
+            User.countDocuments({role:"user"})
+        ]);
+
+        const orderFullfillment = {
+            processing:processingOrder,
+            shipped:shippedOrder,
+            delivered:deliveredOrder,
+        }
+
+        const productCategories = await getCategories({
+            categories,
+            productsCount
+        });
+
+        const stockAvailability = {
+            inStock:productsCount - productsOutOFStock,
+            outOFStock:productsOutOFStock
+        }
+
+        const totalGrossIncome = allOrders.reduce(
+            (prev,order) => prev + Number(order.total || 0),
+            0
+        );
+
+        const totalDiscount = allOrders.reduce(
+            (prev,order) => prev + Number(order.discount || 0),
+            0
+        );
+
+        const productionCost = allOrders.reduce(
+            (prev,order) => prev + Number(order.shippingCharges || 0),
+            0
+        );
+
+        const burnt = allOrders.reduce(
+            (prev,order) => prev + Number(order.tax || 0),
+            0
+        );
+
+        const marketingCost = Math.round(totalGrossIncome * (30 / 100));
+
+        const netMargin = totalGrossIncome - (totalDiscount+productionCost+burnt+marketingCost);
+
+        const revenueDistribution = {
+            netMargin,
+            discount:totalDiscount,
+            productionCost,
+            burnt,
+            marketingCost
+        };
+
+        const usersAgeGroup = {
+            teen: allUsers.filter(i=>i.age<20).length,
+            adult: allUsers.filter(i=> i.age>=20 && i.age<40).length,
+            old: allUsers.filter(i=> i.age>40).length
+        }
+
+        const adminCustomer = {
+            admin:adminUsers,
+            customer:customerUsers
+        }
+
+        charts = {
+            orderFullfillment,
+            productCategories,
+            stockAvailability,
+            revenueDistribution,
+            usersAgeGroup,
+            adminCustomer
+        }
+
+        myCache.set("admin-pie-charts",JSON.stringify(charts))
+    }
+
+    res.status(200)
+    .json({
+        success:true,
+        charts
+    });
 });
 
-
 /**
- * Controller function to get barchart in admin dashboard.
+ * Controller function to get pie chart
  */
-const getBarChart = catchAsyncError(async(
+const getBarchart = catchAsyncError(async(
     req:Request,
     res:Response,
     next:NextFunction
 ) => {
 
+    let charts;
+
+    const key = "admin-bar-charts";
+
+    if(myCache.has(key)){
+        charts = JSON.parse(myCache.get(key) as string);
+    }else{
+
+        const today = new Date();
+        const sixMonthAgo = new Date();
+        sixMonthAgo.setMonth(today.getMonth() - 6);
+
+        const tweleveMonthAgo = new Date();
+        tweleveMonthAgo.setMonth(today.getMonth() - 12);
+
+        const lastTwelveMonthsOrdersPromise = Order.find({
+            createdAt:{
+                $gte: tweleveMonthAgo,
+                $lte: today
+            }
+        }).select(["createdAt","discount"]);
+
+        const lastSixMonthsUsersPromise = User.find({
+            createdAt:{
+                $gte: tweleveMonthAgo,
+                $lte: today
+            }
+        }).select("createdAt");
+
+        const lastSixMonthProductsPromise = Product.find({
+            createdAt:{
+                $gte: sixMonthAgo,
+                $lte: today
+            }
+        }).select(["createdAt","discount"]);
+
+        const [
+            products,
+            users,
+            orders
+        ] = await Promise.all([
+            lastSixMonthProductsPromise,
+            lastSixMonthsUsersPromise,
+            lastTwelveMonthsOrdersPromise,
+        ]);
+
+        const productCounts = getChartData({
+            length:6,
+            today,
+            docArr:products
+        });
+
+        const usersCounts = getChartData({
+            length: 6,
+            today,
+            docArr:users
+        });
+
+        const ordersCounts = getChartData({
+            length: 6,
+            today,
+            docArr:orders
+        });
+
+
+        charts = {
+            users: usersCounts,
+            products: productCounts,
+            orders: ordersCounts
+        }
+        
+        myCache.set(key,JSON.stringify(charts));
+    }
+
+    res.status(200)
+    .json({
+        success:true,
+        charts
+    });
 });
 
 /**
@@ -274,18 +449,92 @@ const getLineChart = catchAsyncError(async(
     next:NextFunction
 ) => {
 
+    let charts;
+
+    const key = "admin-line-charts";
+
+    if(myCache.has(key)){
+        charts = JSON.parse(myCache.get(key) as string);
+    }else{
+
+        const today = new Date();
+        
+        const tweleveMonthAgo = new Date();
+        tweleveMonthAgo.setMonth(today.getMonth() - 12);
+
+        const lastTwelveMonthsProductsPromise = Product.find({
+            createdAt:{
+                $gte: tweleveMonthAgo,
+                $lte: today
+            }
+        }).select(["createdAt","discount"]);
+
+        const lastTwelveMonthsUsersPromise = User.find({
+            createdAt:{
+                $gte: tweleveMonthAgo,
+                $lte: today
+            }
+        }).select("createdAt");
+
+        const lastTwelveMonthsOrdersPromise = Order.find({
+            createdAt:{
+                $gte: tweleveMonthAgo,
+                $lte: today
+            }
+        }).select(["createdAt","discount","total"]);
+
+        const [
+            products,
+            users,
+            orders
+        ] = await Promise.all([
+            lastTwelveMonthsProductsPromise,
+            lastTwelveMonthsUsersPromise,
+            lastTwelveMonthsOrdersPromise,
+        ]);
+
+        const productCounts = getChartData({
+            length:12,
+            today,
+            docArr:products
+        });
+
+        const usersCounts = getChartData({
+            length: 12,
+            today,
+            docArr:users
+        });
+
+        const discount = getChartData({
+            length: 12,
+            today,
+            docArr: orders,
+            property:"discount"
+        });
+
+        const revenue = getChartData({
+            length:12,
+            today,
+            docArr:orders,
+            property:"total"
+        })
+
+        charts = {
+            users: usersCounts,
+            products: productCounts,
+            discount: discount,
+            revenue: revenue
+        }
+        
+        myCache.set(key,JSON.stringify(charts));
+    }
+
+    res.status(200)
+    .json({
+        success:true,
+        charts
+    });
 });
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -294,5 +543,5 @@ export {
     getDashboardStats,
     getPiechart,
     getLineChart,
-    getBarChart,
+    getBarchart
 }

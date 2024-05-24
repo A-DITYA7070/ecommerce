@@ -43,8 +43,9 @@ const newProduct = catchAsyncError(async(
         photo:photo?.path,
     });
 
-    await invalidateCache({
+    invalidateCache({
         product:true,
+        admin:true,
         productId:String(product._id)
     });
 
@@ -244,8 +245,9 @@ const updateProduct = catchAsyncError(async(
 
     await product.save();
 
-    await invalidateCache({
+    invalidateCache({
         product:true,
+        admin:true,
         productId:String(product._id)
     });
 
@@ -278,8 +280,9 @@ const deleteProduct = catchAsyncError(async(
 
     await product.deleteOne();
 
-    await invalidateCache({
+    invalidateCache({
         product:true,
+        admin:true,
         productId:String(product._id)
     });
     

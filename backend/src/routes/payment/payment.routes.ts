@@ -2,6 +2,7 @@ import express from "express";
 import {
     allCoupons,
     applyDiscount,
+    createPaymentIntent,
     deleteCoupon,
     getCoupon,
     newCoupon,
@@ -10,6 +11,9 @@ import {
 import { adminOnly } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
+
+
+router.route("/create").post(createPaymentIntent)
 
 router.route("/coupon/new").post(adminOnly,newCoupon);
 router.route("/coupon/discount").get(applyDiscount);

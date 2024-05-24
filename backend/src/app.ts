@@ -5,6 +5,7 @@ import { errorMiddleWare } from "./middlewares/error.js";
 import { connectToMongoDB } from "./db/databases/mongo-db-connect.js";
 import NodeCache from "node-cache";
 import morgan from "morgan";
+import Stripe from "stripe";
 
 const app = express();
 
@@ -17,6 +18,9 @@ app.use(morgan("dev"));
 // connecting to database..
 connectToMongoDB();
 
+const stripeKey = process.env.STRIPE_KEY || "";
+
+export const stripe = new Stripe(stripeKey);
 // implementing caching using NodeCache.
 export const myCache = new NodeCache();
 

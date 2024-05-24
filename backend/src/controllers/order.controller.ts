@@ -46,7 +46,7 @@ const newOrder = catchAsyncError(async(
 
     await reduceStock(orderItems);
 
-    await invalidateCache({
+    invalidateCache({
         product:true,
         order:true,
         admin:true,
@@ -187,7 +187,7 @@ const processOrder = catchAsyncError(async(
 
     await order.save();
 
-    await invalidateCache({
+    invalidateCache({
         product:false,
         order:true,
         admin:true,
@@ -218,7 +218,7 @@ const deleteOrder = catchAsyncError(async(
     }
     await order.deleteOne();
 
-    await invalidateCache({
+    invalidateCache({
         product:false,
         order:true,
         admin:true,

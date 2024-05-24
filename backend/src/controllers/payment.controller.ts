@@ -2,8 +2,32 @@ import { NextFunction,Request,Response, response } from "express";
 import { catchAsyncError } from "../middlewares/error.js";
 import ErrorHandler from "../utils/utility-class.js";
 import { Coupon } from "../db/models/coupon.model.js";
-import { myCache } from "../app.js";
+import { myCache, stripe } from "../app.js";
 import { invalidateCache } from "../utils/features.js";
+
+
+const createPaymentIntent = catchAsyncError(async(
+    req:Request,
+    res:Response,
+    next:NextFunction
+) => {
+    const {amount} = req.body;
+
+    if(!amount){
+        return next(new ErrorHandler("Enter amount",400));
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create({
+        amount:Number(amount) * 100,
+        currency:"inr"
+    });
+
+    return res.status(201)
+    .json({
+        success:true,
+        clientSecret: paymentIntent.client_secret,
+    });
+});
 
 /**
  * Controller function to create new Coupon
@@ -132,8 +156,9 @@ const updateCoupon = catchAsyncError(async(
 
     await c.save();
 
-    await invalidateCache({
+    invalidateCache({
         coupon:true,
+        admin:true,
         couponId:String(c._id)
     })
 
@@ -187,6 +212,7 @@ const deleteCoupon = catchAsyncError(async(
 
     invalidateCache({
         coupon:true,
+        admin:true,
         couponId:String(coupon._id)
     });
 
@@ -205,5 +231,6 @@ export {
     deleteCoupon,
     allCoupons,
     updateCoupon,
-    getCoupon
+    getCoupon,
+    createPaymentIntent
 }

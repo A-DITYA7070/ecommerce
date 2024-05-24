@@ -45,7 +45,7 @@ const orderSchema = new Schema({
         required:true
     },
     total:{
-        type:String,
+        type:Number,
         required:true
     },
     status:{
