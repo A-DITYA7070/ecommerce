@@ -1,9 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { VscError } from 'react-icons/vsc';
-import cartItems from '../components/cartItems';
+import CartItem from '../components/cartItem';
+import { Link } from 'react-router-dom';
 
 
-const cartItem = [];
+const cartItems = [
+  {
+    productId:"afvgrtgRT",
+    photo:"https://m.media-amazon.com/images/I/71jG+e7roXL._AC_CR0%2C0%2C0%2C0_SX750_.jpg",
+    name:"Macbook",
+    price:3000,
+    quantity:3,
+    stock:40,
+  }
+
+
+];
 const subtotal = 5000;
 const tax = Math.round(subtotal * 0.18);
 const shippingCharges = 200;
@@ -36,9 +48,9 @@ const Cart = () => {
   return <div className='cart'>
     <main>
       {
-        // cartItem.map((item,idx) => (
-        //   <cartItems />
-        // ))
+        cartItems.length > 0 ? cartItems.map((item,idx) => (
+          <CartItem key={idx} cartItem={item}  />
+        )) : <h1>No Items Added</h1>
       }
 
     </main>
@@ -70,7 +82,13 @@ const Cart = () => {
             </span>
           )
         )}
+        {
+          cartItems.length > 0 && <Link to="/shipping">CheckOut</Link>
+        }
     </aside>
+
+    
+
   </div>
 }
 
