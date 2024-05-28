@@ -20,12 +20,12 @@ const Login = () => {
 
         const res = await login({
             name:"aditya",
-            email:"adi@mgaj.com",
-            photo:"dfgdf" || "",
+            email:"adi2@mgaj.com",
+            photo:"dfgd3f" || "",
             gender,
             role:"user",
             dob:date,
-            _id:"dgfff"
+            _id:"dgff3f"
         });
 
         if("data" in res){
