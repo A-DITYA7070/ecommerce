@@ -6,8 +6,20 @@ import { connectToMongoDB } from "./db/databases/mongo-db-connect.js";
 import NodeCache from "node-cache";
 import morgan from "morgan";
 import Stripe from "stripe";
+import cors from "cors";
 
 const app = express();
+
+
+
+const corsOptions ={
+    origin:'http://localhost:5173', 
+    credentials:true,            
+    methods:['GET','POST','PATCH','PUT','DELETE'],
+    optionSuccessStatus:200
+}
+
+app.use(cors(corsOptions));
 
 // implementing dotenv 
 dotenv.config({path:".env"});

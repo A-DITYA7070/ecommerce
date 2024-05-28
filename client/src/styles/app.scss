@@ -38,6 +38,8 @@
   @import "home";
   @import "cart.scss";
   @import "shipping.scss";
+  @import "login.scss";
+  @import "search.scss";
   
   @import "admin-styles/dashboard";
   @import "admin-styles/products";
@@ -46,6 +48,19 @@
   @import "admin-styles/mediaquery";
 
 
+  .container{
+    max-width: 1367px;
+    width: 100%;
+    margin:auto;
+    overflow: auto;
+    >h1{
+      @include heading;
+      margin: 1rem 0;
+      text-align: left;
+    }
+  }
+
+  
   .header{
     @include flex(row,flex-end,stretch,1.2rem);
     padding: 1rem;
@@ -83,30 +98,11 @@
   }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  .heading{
+    @include heading;
+    margin:1rem 0;
+    text-align: center;
+  }
 
   
   .admin-container {
