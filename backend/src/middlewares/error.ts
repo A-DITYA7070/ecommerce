@@ -35,11 +35,11 @@ export const errorMiddleWare = (
 }
 
 /**
- * 
  * @param func to resolve promise of the function passed 
  * @returns Promise
  * It is useful because we will not have to write try catch block repeatadlly
  */
-export const catchAsyncError = (func:ControllerType) => (req:Request,res:Response,next:NextFunction) => {
-    return Promise.resolve(func(req,res,next)).catch(next);
+export const catchAsyncError = (func:ControllerType) => 
+    (req:Request,res:Response,next:NextFunction) => {
+      return Promise.resolve(func(req,res,next)).catch(next);
 }
