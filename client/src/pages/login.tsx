@@ -18,6 +18,12 @@ const Login = () => {
         const provider = new GoogleAuthProvider();
         const {user} = await signInWithPopup(auth,provider);
 
+        console.log(user);
+
+        if(!user){
+            toast.error("Fire-Base Error occured while logging in ");
+        }
+
         const res = await login({
             name:"aditya",
             email:"adi2@mgaj.com",
@@ -28,6 +34,7 @@ const Login = () => {
             _id:"dgff3f"
         });
 
+
         if("data" in res){
             toast.success(res.data?.message || "logged in successfull");
         }else{
@@ -36,6 +43,7 @@ const Login = () => {
             toast.error(message);
         }
     }catch(err){
+        console.log(err);
         toast.error("Sign In failed");
     }
   }
